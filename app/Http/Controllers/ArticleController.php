@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Http\Resources\ArticleResource;
@@ -33,8 +32,7 @@ class ArticleController extends Controller
         // ordering
         $order = "desc";
         if(isset($request->order) && !empty($request->order)) {
-            if($request->order == OrderingCases::OLDEST->value) $order = "asc";
-            if($request->order == OrderingCases::NEWEST->value) $order = "desc";
+            $order = OrderingCases::from($request->order)->getOrdering();
         }
         
         // filtering
@@ -61,29 +59,8 @@ class ArticleController extends Controller
         }
 
         if(isset($request->date) && !empty($request->date)) {
-            $date = $request->date;
-            $startDate = Carbon::now();
-            switch ($date) {
-                case DateFilters::LAST_HOUR->value:
-                    $startDate = $startDate->subHour();
-                    break;
-                case DateFilters::LAST_DAY->value:
-                    $startDate = $startDate->subDay();
-                    break;
-                case DateFilters::LAST_WEEK->value:
-                    $startDate = $startDate->subWeek();
-                    break;
-                case DateFilters::LAST_MONTH->value:
-                    $startDate = $startDate->subMonth();
-                    break;
-                case DateFilters::LAST_YEAR->value:
-                    $startDate = $startDate->subYear();
-                    break;
-                default:
-                    $startDate = $startDate->subYears(2);
-            }
-
-            $articles->where('date', '>=', $startDate);
+            $date = DateFilters::from($request->date)->getStartDate();
+            $articles->where('date', '>=', $date);
         }
 
         // response
