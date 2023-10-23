@@ -18,6 +18,8 @@ class Article extends Model
 
     public static function refreshArticles() {
 
+        self::query()->truncate();
+
         $articles = array();
 
         $newsApiResponse = Http::get('https://newsapi.org/v2/top-headlines', [
@@ -50,6 +52,8 @@ class Article extends Model
             }
         }
 
-        self::createMany($articles);
+        foreach($articles as $article) {
+            self::create($article);
+        }
     }
 }
