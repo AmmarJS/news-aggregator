@@ -6,10 +6,18 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Http\Resources\ArticleResource;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use App\Traits\Response;
+use App\Traits\PaginatorHelpers;
+use App\Enums\OrderingCases;
+use App\Enums\DateFilters;
 
 class ArticleController extends Controller
 {
+
+    use Response, PaginatorHelpers;
+
     public function index(Request $request) {
         if(!Article::query()->exists()) Article::refreshArticles();
 
@@ -25,8 +33,8 @@ class ArticleController extends Controller
         // ordering
         $order = "desc";
         if(isset($request->order) && !empty($request->order)) {
-            if($request->order == "oldest") $order = "asc";
-            if($request->order == "newest") $order = "desc";
+            if($request->order == OrderingCases::OLDEST->value) $order = "asc";
+            if($request->order == OrderingCases::NEWEST->value) $order = "desc";
         }
         
         // filtering
@@ -56,19 +64,19 @@ class ArticleController extends Controller
             $date = $request->date;
             $startDate = Carbon::now();
             switch ($date) {
-                case 'last hour':
+                case DateFilters::LAST_HOUR->value:
                     $startDate = $startDate->subHour();
                     break;
-                case 'last day':
+                case DateFilters::LAST_DAY->value:
                     $startDate = $startDate->subDay();
                     break;
-                case 'last week':
+                case DateFilters::LAST_WEEK->value:
                     $startDate = $startDate->subWeek();
                     break;
-                case 'last month':
+                case DateFilters::LAST_MONTH->value:
                     $startDate = $startDate->subMonth();
                     break;
-                case 'last year':
+                case DateFilters::LAST_YEAR->value:
                     $startDate = $startDate->subYear();
                     break;
                 default:
@@ -83,12 +91,18 @@ class ArticleController extends Controller
         $distinct_authors = $distinct_articles->pluck("author");
         $distinct_categories = $distinct_articles->pluck("category");
         $distinct_sources = $distinct_articles->pluck("source");
-        $results = $articles->orderBy('date', $order)->get();
-        return [
+        $results = $articles->orderBy('date', $order);
+        $count = $results->count();
+        
+        $paginator = new LengthAwarePaginator(ArticleResource::collection($results->paginate($page_size)), $count,$page_size, $page,[
+            "path" => $this->getUrlWithoutPage($request->fullUrl(), $request->url())
+        ]);
+        
+        return $this->response([
             "authors" => $distinct_authors,
             "categories" => $distinct_categories,
-            "results" => new Paginator(ArticleResource::collection($results), $page_size, $page),
+            "articles" => $paginator,
             "sources" => $distinct_sources
-        ];
+        ]);
     }
 }
