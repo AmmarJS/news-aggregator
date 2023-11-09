@@ -2,10 +2,7 @@
 
 namespace App\Classes;
 
-use App\Interfaces\IArticle;
-use DateTime;
-
-abstract class Article implements IArticle {
+abstract class Article {
     protected string $author;
     protected string $category;
     protected string $date;
@@ -14,6 +11,16 @@ abstract class Article implements IArticle {
     protected string $source;
     protected string $title;
     protected string $url;
+
+    protected string $endpoint;
+    protected string $apiKey;
+
+    // add your new article implementations here
+    private static array $sources = [
+        GuardianArticle::class,
+        NewsArticle::class,
+        NYTArticle::class
+    ];
 
     /**
      * Returns the article info
@@ -30,5 +37,9 @@ abstract class Article implements IArticle {
             "title" => $this->title,
             "url" => $this->url
         ];
+    }
+
+    public static function getSources() : array {
+        return static::$sources;
     }
 }
