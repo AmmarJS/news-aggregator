@@ -40,6 +40,12 @@ abstract class Article {
     }
 
     public static function getSources() : array {
-        return static::$sources;
+        $array = array_filter(static::$sources, function($class) {
+            if(
+                is_subclass_of($class, self::class)
+                && in_array(\App\Interfaces\IArticle::class, class_implements($class))
+            ) return true;
+        });
+        return $array;
     }
 }
